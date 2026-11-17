@@ -1,5 +1,5 @@
 /* =========================================================
-   ADEGAN 1: Pixel Daisy ("LOVES ME / LOVES ME NOT") - Diperbesar
+   ADEGAN 1: Pixel Daisy ("LOVES ME / LOVES ME NOT") - Klik Manual
    ========================================================= */
 const daisyCanvas = document.getElementById("daisy-canvas");
 const dctx = daisyCanvas.getContext("2d");
@@ -16,7 +16,7 @@ const petals = [];
 const hearts = [];
 let lovesMe = true;
 let daisyFinished = false;
-let switchTimer = 0;
+let transitionStarted = false;
 
 function initDaisyPetals() {
   petals.length = 0;
@@ -72,7 +72,7 @@ function drawDaisyBackground() {
     drawPixelRect(dctx, x, 306 - h, 5, h, x % 16 === 0 ? "#388e4c" : "#28723d");
   }
 
-  // Batang & daun bunga daisy yang lebih tebal
+  // Batang & daun bunga daisy
   drawPixelRect(dctx, 156, 166, 8, 146, "#2f8f4e");
   drawPixelRect(dctx, 134, 234, 22, 8, "#3ca85c");
   drawPixelRect(dctx, 164, 256, 22, 8, "#3ca85c");
@@ -109,6 +109,41 @@ function drawPixelHeart(x, y, color = "#ff6fa5") {
   });
 }
 
+function pluckNextPetal() {
+  if (!sceneDaisy.classList.contains("active") || daisyFinished) return;
+
+  const nextAttached = petals.find((p) => p.state === "attached");
+  if (!nextAttached) return;
+
+  nextAttached.state = "falling";
+  nextAttached.vx = (Math.random() - 0.5) * 42;
+  nextAttached.vy = 22 + Math.random() * 16;
+  nextAttached.vRot = (Math.random() - 0.5) * 2.2;
+  lovesMe = !lovesMe;
+
+  const remaining = petals.filter((p) => p.state === "attached").length;
+  if (remaining === 0 && !transitionStarted) {
+    lovesMe = true;
+    daisyFinished = true;
+    transitionStarted = true;
+
+    for (let i = 0; i < 12; i++) {
+      hearts.push({
+        x: 136 + (i % 4) * 16,
+        y: 134 - Math.floor(i / 4) * 14,
+        phase: i,
+      });
+    }
+
+    setTimeout(() => {
+      sceneDaisy.classList.remove("active");
+      sceneBouquet.classList.add("active");
+    }, 2600);
+  }
+}
+
+daisyCanvas.addEventListener("pointerdown", pluckNextPetal);
+
 function updateAndRenderDaisy(dt) {
   drawDaisyBackground();
 
@@ -119,6 +154,16 @@ function updateAndRenderDaisy(dt) {
   dctx.fillStyle = "#f2a6c8";
   dctx.fillText(label, DAISY_W / 2, 58);
   dctx.restore();
+
+  // Petunjuk kecil di bawah teks saat masih ada kelopak
+  if (!daisyFinished) {
+    dctx.save();
+    dctx.font = '11px "Silkscreen", monospace';
+    dctx.textAlign = "center";
+    dctx.fillStyle = "rgba(235, 240, 255, 0.72)";
+    dctx.fillText("TAP THE FLOWER", DAISY_W / 2, 82);
+    dctx.restore();
+  }
 
   for (const p of petals) {
     if (p.state === "attached") {
@@ -136,7 +181,7 @@ function updateAndRenderDaisy(dt) {
     }
   }
 
-  // Tengah bunga (putik kuning) diperbesar
+  // Tengah bunga (putik kuning)
   drawPixelRect(dctx, 148, 140, 24, 24, "#f5c542");
   drawPixelRect(dctx, 152, 144, 16, 16, "#ffe07d");
 
@@ -153,35 +198,6 @@ function daisyLoop(now) {
   lastDaisyTime = now;
 
   if (sceneDaisy.classList.contains("active")) {
-    switchTimer += dt;
-    if (!daisyFinished && switchTimer >= 1.05) {
-      switchTimer = 0;
-      const nextAttached = petals.find((p) => p.state === "attached");
-      if (nextAttached) {
-        nextAttached.state = "falling";
-        nextAttached.vx = (Math.random() - 0.5) * 42;
-        nextAttached.vy = 22 + Math.random() * 16;
-        nextAttached.vRot = (Math.random() - 0.5) * 2.2;
-        lovesMe = !lovesMe;
-
-        const remaining = petals.filter((p) => p.state === "attached").length;
-        if (remaining === 0) {
-          lovesMe = true;
-          daisyFinished = true;
-          for (let i = 0; i < 12; i++) {
-            hearts.push({
-              x: 136 + (i % 4) * 16,
-              y: 134 - Math.floor(i / 4) * 14,
-              phase: i,
-            });
-          }
-          setTimeout(() => {
-            sceneDaisy.classList.remove("active");
-            sceneBouquet.classList.add("active");
-          }, 2600);
-        }
-      }
-    }
     updateAndRenderDaisy(dt);
   }
 
@@ -192,7 +208,7 @@ initDaisyPetals();
 requestAnimationFrame(daisyLoop);
 
 /* =========================================================
-   ADEGAN 2: Starfield + "I Have Something" + Open -> Flowers (Diperbesar)
+   ADEGAN 2: Starfield + "I Have Something" + Open -> Flowers
    ========================================================= */
 const bouquetCanvas = document.getElementById("bouquet-canvas");
 const bctx = bouquetCanvas.getContext("2d");
