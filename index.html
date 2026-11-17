@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bunga Cantik Khusus Untuk Dirimu</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=Cormorant+Garamond:ital,wght@0,600;1,600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- ADEGAN 1: Pixel Daisy "LOVES ME / LOVES ME NOT" -->
+  <section id="scene-daisy" class="scene active" aria-label="Pixel daisy scene">
+    <div class="pixel-window">
+      <div class="window-top">
+        <span class="window-title">loves me, loves me not</span>
+        <div class="window-btns" aria-hidden="true">
+          <span>−</span>
+          <span>□</span>
+          <span>×</span>
+        </div>
+      </div>
+      <canvas id="daisy-canvas" width="240" height="280"></canvas>
+    </div>
+  </section>
+
+  <!-- ADEGAN 2: Starfield + "I Have Something" + Open -> Glowing Flowers -->
+  <section id="scene-bouquet" class="scene" aria-label="Glowing flowers scene">
+    <canvas id="bouquet-canvas"></canvas>
+
+    <div id="intro-overlay" class="intro-overlay">
+      <p id="intro-title" class="intro-title">I Have Something</p>
+      <button id="open-btn" class="open-btn" type="button">
+        <span class="sparkle-icon">✦</span>
+        <span>Open</span>
+      </button>
+    </div>
+
+    <div id="final-caption" class="final-caption" aria-live="polite">
+      bunga cantik khusus untuk dirimu
+    </div>
+  </section>
+
+  <script src="script.js"></script>
+</body>
+</html>
