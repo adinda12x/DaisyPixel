@@ -29,12 +29,12 @@ body {
   visibility: visible;
 }
 
-/* ADEGAN 1: Pixel Window (diperbesar) */
+/* ADEGAN 1: Pixel Window */
 .pixel-window {
-  width: min(94vw, 500px);
-  background: #141936;
-  border: 2px solid #8fa3d8;
-  box-shadow: 0 22px 55px rgba(0, 0, 0, 0.6);
+  width: min(94vw, 480px);
+  background: #1b204a;
+  border: 2px solid #9aa9d6;
+  box-shadow: 0 22px 55px rgba(0, 0, 0, 0.65);
   overflow: hidden;
 }
 
@@ -42,10 +42,10 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 12px;
+  padding: 7px 11px;
   background: #d8e0f5;
   color: #1b2244;
-  font-size: 0.8rem;
+  font-size: 0.78rem;
 }
 
 .window-btns {
@@ -56,11 +56,11 @@ body {
 .window-btns span {
   display: inline-grid;
   place-items: center;
-  width: 18px;
-  height: 18px;
+  width: 17px;
+  height: 17px;
   background: #eef2fc;
   border: 1px solid #7d8fbe;
-  font-size: 0.7rem;
+  font-size: 0.68rem;
 }
 
 #daisy-canvas {
@@ -68,6 +68,7 @@ body {
   height: auto;
   display: block;
   image-rendering: pixelated;
+  cursor: pointer;
 }
 
 /* ADEGAN 2: Starfield & Glowing Flowers */
