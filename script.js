@@ -1,5 +1,5 @@
 /* =========================================================
-   ADEGAN 1: Pixel Daisy ("LOVES ME / LOVES ME NOT") - Klik Manual
+   ADEGAN 1: Pixel Daisy ("LOVES ME / LOVES ME NOT") - Mirip Video
    ========================================================= */
 const daisyCanvas = document.getElementById("daisy-canvas");
 const dctx = daisyCanvas.getContext("2d");
@@ -7,119 +7,229 @@ const dctx = daisyCanvas.getContext("2d");
 const sceneDaisy = document.getElementById("scene-daisy");
 const sceneBouquet = document.getElementById("scene-bouquet");
 
-const DAISY_W = 320;
-const DAISY_H = 360;
-const DAISY_SCALE = 1.32;
+const DW = 240;
+const DH = 272;
+const CENTER_X = 120;
+const CENTER_Y = 124;
 
-const TOTAL_PETALS = 12;
+const TOTAL_PETALS = 16;
 const petals = [];
+const centerSeeds = [];
 const hearts = [];
+
 let lovesMe = true;
 let daisyFinished = false;
 let transitionStarted = false;
+let textFlicker = 0;
 
-function initDaisyPetals() {
+function px(x, y, w, h, color) {
+  dctx.fillStyle = color;
+  dctx.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h));
+}
+
+function initDaisy() {
   petals.length = 0;
-  const cx = 160;
-  const cy = 152;
+  centerSeeds.length = 0;
+
   for (let i = 0; i < TOTAL_PETALS; i++) {
-    const angle = (Math.PI * 2 * i) / TOTAL_PETALS;
+    const angle = (Math.PI * 2 * i) / TOTAL_PETALS - Math.PI / 2;
     petals.push({
       angle,
-      cx,
-      cy,
+      x: CENTER_X,
+      y: CENTER_Y,
       state: "attached",
       vx: 0,
       vy: 0,
-      rot: 0,
       vRot: 0,
       alpha: 1,
     });
   }
+
+  // Titik biji di tengah bunga (seperti bits di video)
+  for (let i = 0; i < 26; i++) {
+    const a = i * 2.39996; // golden angle
+    const r = Math.sqrt(i / 26) * 11;
+    centerSeeds.push({
+      dx: Math.cos(a) * r,
+      dy: Math.sin(a) * r,
+      color: i % 3 === 0 ? "#6b2f10" : i % 2 === 0 ? "#ffe58f" : "#b85d19",
+    });
+  }
 }
 
-function drawPixelRect(ctx, x, y, w, h, color) {
-  ctx.fillStyle = color;
-  ctx.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h));
-}
-
-function drawDaisyBackground() {
-  const bands = ["#141b44", "#1b2458", "#232e6b", "#2d3a7e"];
-  bands.forEach((col, idx) => {
-    drawPixelRect(dctx, 0, idx * (DAISY_H / 4), DAISY_W, DAISY_H / 4 + 2, col);
-  });
-
-  const stars = [
-    [28, 30], [72, 22], [118, 38], [190, 26], [272, 36],
-    [46, 80], [98, 66], [208, 86], [290, 72], [62, 126],
+function drawNightSkyAndHills() {
+  // Gradasi langit malam pixel
+  const skyColors = [
+    "#191e4f", "#1d2359", "#222966", "#273073",
+    "#2c3780", "#323e8c", "#374699", "#3d4ea6",
   ];
-  stars.forEach(([sx, sy]) => {
-    drawPixelRect(dctx, sx, sy, 3, 3, "#dce5ff");
+  const bandH = 22;
+  skyColors.forEach((col, i) => {
+    px(0, i * bandH, DW, bandH + 1, col);
   });
 
-  // Bulan sabit
-  drawPixelRect(dctx, 248, 44, 30, 30, "#f7e89c");
-  drawPixelRect(dctx, 259, 38, 25, 25, "#1b2458");
+  // Bintang pixel acak deterministik
+  const starCoords = [
+    [14, 16], [34, 28], [52, 14], [78, 22], [104, 12], [148, 18], [174, 12],
+    [22, 54], [44, 72], [68, 46], [92, 68], [156, 56], [182, 74], [218, 64],
+    [18, 104], [48, 118], [178, 112], [212, 98], [30, 148], [204, 142],
+  ];
+  starCoords.forEach(([sx, sy], idx) => {
+    const col = idx % 4 === 0 ? "#ffffff" : "#b9c7f5";
+    px(sx, sy, 2, 2, col);
+    if (idx % 5 === 0) {
+      px(sx - 1, sy, 4, 1, "#8fa4e8");
+      px(sx, sy - 1, 1, 4, "#8fa4e8");
+    }
+  });
 
-  // Bukit ungu gelap
-  drawPixelRect(dctx, 0, 244, DAISY_W, 68, "#262254");
-  drawPixelRect(dctx, 0, 266, DAISY_W, 48, "#1f1b46");
+  // Bulan purnama kuning lembut di kanan atas
+  const mx = 192;
+  const my = 42;
+  px(mx - 14, my - 10, 28, 20, "rgba(255, 238, 168, 0.22)");
+  px(mx - 10, my - 14, 20, 28, "rgba(255, 238, 168, 0.22)");
+  px(mx - 9, my - 9, 18, 18, "#f7e58c");
+  px(mx - 7, my - 10, 14, 20, "#fff4b8");
+  px(mx - 10, my - 7, 20, 14, "#fff4b8");
+  // Tekstur kawah halus pada bulan
+  px(mx - 3, my - 3, 3, 3, "#ead06c");
+  px(mx + 3, my + 2, 2, 2, "#ead06c");
+  px(mx - 2, my + 4, 2, 2, "#ead06c");
 
-  // Rumput bawah
-  drawPixelRect(dctx, 0, 306, DAISY_W, 54, "#1f5a36");
-  for (let x = 0; x < DAISY_W; x += 8) {
-    const h = 11 + ((x * 7) % 14);
-    drawPixelRect(dctx, x, 306 - h, 5, h, x % 16 === 0 ? "#388e4c" : "#28723d");
+  // Bukit ungu berlapis di latar belakang
+  for (let x = 0; x < DW; x += 2) {
+    const h1 = Math.round(16 + Math.sin(x * 0.025 + 0.6) * 8 + Math.cos(x * 0.05) * 3);
+    px(x, 198 - h1, 2, h1 + 24, "#352975");
+
+    const h2 = Math.round(10 + Math.sin(x * 0.035 + 2.1) * 6);
+    px(x, 212 - h2, 2, h2 + 20, "#261d59");
   }
 
-  // Batang & daun bunga daisy
-  drawPixelRect(dctx, 156, 166, 8, 146, "#2f8f4e");
-  drawPixelRect(dctx, 134, 234, 22, 8, "#3ca85c");
-  drawPixelRect(dctx, 164, 256, 22, 8, "#3ca85c");
+  // Rumput bawah berlapis warna
+  px(0, 224, DW, 48, "#225930");
+  for (let x = 0; x < DW; x += 2) {
+    const bladeH = 6 + ((x * 13 + 5) % 11);
+    const shade = x % 6 === 0 ? "#66b858" : x % 4 === 0 ? "#439447" : "#2b6e39";
+    px(x, 226 - bladeH, 2, bladeH + 46, shade);
+  }
+  // Titik bunga liar kecil di rumput
+  const flora = [
+    [16, 232, "#ff9ec7"], [42, 238, "#ffe28a"], [76, 234, "#ffffff"],
+    [166, 236, "#ffe28a"], [198, 231, "#ff9ec7"], [224, 240, "#ffffff"],
+  ];
+  flora.forEach(([fx, fy, fc]) => px(fx, fy, 2, 2, fc));
 }
 
-function drawPetalShape(x, y, angle, alpha) {
+function drawStemAndLeaves() {
+  // Batang melengkung halus dengan outline gelap
+  const stemTopY = CENTER_Y + 12;
+  const stemBottomY = 256;
+
+  for (let y = stemTopY; y <= stemBottomY; y += 2) {
+    const t = (y - stemTopY) / (stemBottomY - stemTopY);
+    const sx = Math.round(CENTER_X + Math.sin(t * Math.PI * 0.85) * 5);
+    px(sx - 4, y, 8, 2, "#174222");
+    px(sx - 3, y, 6, 2, "#389c4c");
+    px(sx - 1, y, 2, 2, "#66cf78");
+  }
+
+  // Daun kiri besar
+  const leftLeaf = [
+    [-6, 0, 6], [-12, -2, 12], [-18, -4, 18], [-24, -5, 22],
+    [-28, -4, 24], [-26, -2, 20], [-20, 0, 14], [-12, 2, 8],
+  ];
+  leftLeaf.forEach(([dx, dy, w]) => {
+    const lx = CENTER_X - 3 + dx;
+    const ly = 186 + dy;
+    px(lx - 1, ly, w + 2, 2, "#174222");
+    px(lx, ly, w, 2, "#46b358");
+    px(lx + 2, ly, Math.max(2, w - 5), 1, "#72db82");
+  });
+
+  // Daun kanan besar
+  const rightLeaf = [
+    [2, 0, 6], [2, -2, 12], [4, -4, 18], [6, -5, 22],
+    [8, -4, 24], [10, -2, 20], [10, 0, 14], [8, 2, 8],
+  ];
+  rightLeaf.forEach(([dx, dy, w]) => {
+    const lx = CENTER_X + 3 + dx;
+    const ly = 204 + dy;
+    px(lx - 1, ly, w + 2, 2, "#174222");
+    px(lx, ly, w, 2, "#3da34f");
+    px(lx + 2, ly, Math.max(2, w - 5), 1, "#6ad17b");
+  });
+}
+
+function drawElongatedPetal(x, y, angle, alpha) {
   dctx.save();
   dctx.translate(x, y);
   dctx.rotate(angle);
-  dctx.scale(DAISY_SCALE, DAISY_SCALE);
   dctx.globalAlpha = alpha;
-  drawPixelRect(dctx, -4, -23, 8, 19, "#eef3ff");
-  drawPixelRect(dctx, -2, -25, 4, 4, "#ffffff");
+
+  // Kelopak daisy panjang & ramping (bukan kotak pendek)
+  const layers = [
+    [-3, 10, 6, 4, "#b8c7eb"],
+    [-4, 14, 8, 8, "#dce6ff"],
+    [-4, 22, 8, 12, "#eef3ff"],
+    [-3, 34, 6, 10, "#ffffff"],
+    [-2, 44, 4, 5, "#ffffff"],
+  ];
+  layers.forEach(([lx, ly, lw, lh, col]) => {
+    dctx.fillStyle = col;
+    dctx.fillRect(lx, ly, lw, lh);
+  });
+
+  // Garis bayangan tipis di sisi kanan kelopak
+  dctx.fillStyle = "#9fb2de";
+  dctx.fillRect(2, 15, 2, 24);
+
   dctx.restore();
 }
 
-function drawPixelHeart(x, y, color = "#ff6fa5") {
-  const blocks = [
+function drawDaisyCenter() {
+  // Lingkaran putik bertekstur biji pixel
+  const r = 14;
+  for (let dy = -r; dy <= r; dy += 2) {
+    for (let dx = -r; dx <= r; dx += 2) {
+      const dist = Math.hypot(dx, dy);
+      if (dist <= r) {
+        const col = dist > r - 3 ? "#6b2f10" : dist > r - 6 ? "#b85d19" : "#e39b2d";
+        px(CENTER_X + dx, CENTER_Y + dy, 2, 2, col);
+      }
+    }
+  }
+
+  for (const seed of centerSeeds) {
+    px(CENTER_X + seed.dx, CENTER_Y + seed.dy, 2, 2, seed.color);
+  }
+}
+
+function drawPixelHeart(hx, hy, color = "#ff6fa5") {
+  const shape = [
     [-4, -2], [-2, -2], [2, -2], [4, -2],
     [-6, 0], [-4, 0], [-2, 0], [0, 0], [2, 0], [4, 0], [6, 0],
     [-4, 2], [-2, 2], [0, 2], [2, 2], [4, 2],
     [-2, 4], [0, 4], [2, 4],
     [0, 6],
   ];
-  blocks.forEach(([dx, dy]) => {
-    drawPixelRect(
-      dctx,
-      x + dx * DAISY_SCALE,
-      y + dy * DAISY_SCALE,
-      3 * DAISY_SCALE,
-      3 * DAISY_SCALE,
-      color
-    );
+  shape.forEach(([dx, dy]) => {
+    px(hx + dx, hy + dy, 2, 2, color);
   });
 }
 
 function pluckNextPetal() {
   if (!sceneDaisy.classList.contains("active") || daisyFinished) return;
 
-  const nextAttached = petals.find((p) => p.state === "attached");
-  if (!nextAttached) return;
+  const next = petals.find((p) => p.state === "attached");
+  if (!next) return;
 
-  nextAttached.state = "falling";
-  nextAttached.vx = (Math.random() - 0.5) * 42;
-  nextAttached.vy = 22 + Math.random() * 16;
-  nextAttached.vRot = (Math.random() - 0.5) * 2.2;
+  next.state = "falling";
+  next.vx = (Math.random() - 0.5) * 34;
+  next.vy = 18 + Math.random() * 14;
+  next.vRot = (Math.random() - 0.5) * 1.8;
+
   lovesMe = !lovesMe;
+  textFlicker = 6;
 
   const remaining = petals.filter((p) => p.state === "attached").length;
   if (remaining === 0 && !transitionStarted) {
@@ -127,68 +237,69 @@ function pluckNextPetal() {
     daisyFinished = true;
     transitionStarted = true;
 
-    for (let i = 0; i < 12; i++) {
+    for (let i = 0; i < 16; i++) {
       hearts.push({
-        x: 136 + (i % 4) * 16,
-        y: 134 - Math.floor(i / 4) * 14,
-        phase: i,
+        x: CENTER_X - 26 + (i % 5) * 13,
+        y: CENTER_Y - 6 - Math.floor(i / 5) * 9,
+        phase: i * 0.7,
       });
     }
 
     setTimeout(() => {
       sceneDaisy.classList.remove("active");
       sceneBouquet.classList.add("active");
-    }, 2600);
+    }, 2800);
   }
 }
 
 daisyCanvas.addEventListener("pointerdown", pluckNextPetal);
 
 function updateAndRenderDaisy(dt) {
-  drawDaisyBackground();
+  dctx.clearRect(0, 0, DW, DH);
+  drawNightSkyAndHills();
+  drawStemAndLeaves();
 
+  // Teks LOVES ME / LOVES ME NOT di bagian atas
+  if (textFlicker > 0) textFlicker -= 1;
   const label = lovesMe ? "LOVES ME" : "LOVES ME NOT";
   dctx.save();
-  dctx.font = 'bold 23px "Silkscreen", monospace';
+  dctx.font = 'bold 18px "Silkscreen", monospace';
   dctx.textAlign = "center";
-  dctx.fillStyle = "#f2a6c8";
-  dctx.fillText(label, DAISY_W / 2, 58);
+  dctx.fillStyle = textFlicker > 3 ? "#ffffff" : "#f49ac2";
+  dctx.fillText(label, CENTER_X, 34);
+
+  if (!daisyFinished) {
+    dctx.font = '8px "Silkscreen", monospace';
+    dctx.fillStyle = "rgba(235, 240, 255, 0.72)";
+    dctx.fillText("CLICK THE FLOWER", CENTER_X, 50);
+  }
   dctx.restore();
 
-  // Petunjuk kecil di bawah teks saat masih ada kelopak
-  if (!daisyFinished) {
-    dctx.save();
-    dctx.font = '11px "Silkscreen", monospace';
-    dctx.textAlign = "center";
-    dctx.fillStyle = "rgba(235, 240, 255, 0.72)";
-    dctx.fillText("TAP THE FLOWER", DAISY_W / 2, 82);
-    dctx.restore();
-  }
-
+  // Kelopak bunga
   for (const p of petals) {
     if (p.state === "attached") {
-      drawPetalShape(p.cx, p.cy, p.angle, 1);
+      drawElongatedPetal(p.x, p.y, p.angle, 1);
     } else if (p.state === "falling") {
-      p.cx += p.vx * dt;
-      p.cy += p.vy * dt;
-      p.vy += 34 * dt;
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      p.vy += 26 * dt;
       p.angle += p.vRot * dt;
-      p.alpha = Math.max(0, p.alpha - 0.2 * dt);
-      drawPetalShape(p.cx, p.cy, p.angle, p.alpha);
-      if (p.cy > DAISY_H - 15 || p.alpha <= 0) {
+      p.alpha = Math.max(0, p.alpha - 0.18 * dt);
+      drawElongatedPetal(p.x, p.y, p.angle, p.alpha);
+      if (p.y > DH + 20 || p.alpha <= 0) {
         p.state = "gone";
       }
     }
   }
 
-  // Tengah bunga (putik kuning)
-  drawPixelRect(dctx, 148, 140, 24, 24, "#f5c542");
-  drawPixelRect(dctx, 152, 144, 16, 16, "#ffe07d");
+  // Tengah bunga
+  drawDaisyCenter();
 
+  // Hati-hati kecil yang naik setelah kelopak terakhir gugur
   for (const h of hearts) {
-    h.y -= 32 * dt;
-    h.x += Math.sin(h.y * 0.07 + h.phase) * 0.45;
-    drawPixelHeart(h.x, h.y, "#ff7eb3");
+    h.y -= 24 * dt;
+    h.x += Math.sin(h.y * 0.08 + h.phase) * 0.35;
+    drawPixelHeart(h.x, h.y, h.phase % 2 > 1 ? "#ff9ec7" : "#ff6fa5");
   }
 }
 
@@ -200,11 +311,10 @@ function daisyLoop(now) {
   if (sceneDaisy.classList.contains("active")) {
     updateAndRenderDaisy(dt);
   }
-
   requestAnimationFrame(daisyLoop);
 }
 
-initDaisyPetals();
+initDaisy();
 requestAnimationFrame(daisyLoop);
 
 /* =========================================================
